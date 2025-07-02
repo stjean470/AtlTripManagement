@@ -14,5 +14,6 @@ public interface AttractionService {
 
     AttractionDto getAttractionById(Long id);
 
-    //String deleteAttraction(Long id)
+    AttractionDto updateAttraction(Long id, AttractionDto updatedAttraction);
+    String deleteAttraction(Long id);
 }

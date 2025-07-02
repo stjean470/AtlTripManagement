@@ -38,4 +38,21 @@ public class AttractionServiceImpl implements AttractionService{
         return AttractionMapper.mapToAttractionDto(attraction);
     }
 
+    @Override
+    public AttractionDto updateAttraction(Long id, AttractionDto updatedAttraction) {
+        Attraction attraction = attractionRepository.findById(id).orElseThrow(() -> new RuntimeException("Couldn't find Attraction"));
+        attraction.setAttraction(updatedAttraction.getAttraction());
+        attraction.setCity(updatedAttraction.getCity());
+        attraction.setState(updatedAttraction.getState());
+        Attraction updateAttractionObj = attractionRepository.save(attraction);
+        return AttractionMapper.mapToAttractionDto(updateAttractionObj);
+    }
+
+    @Override
+    public String deleteAttraction(Long id) {
+        Attraction attraction = attractionRepository.findById(id).orElseThrow(() -> new RuntimeException("Couldn't find Attraction"));
+        attractionRepository.delete(attraction);
+        return "Attraction with ID: " + id + " has been deleted";
+    }
+
 }

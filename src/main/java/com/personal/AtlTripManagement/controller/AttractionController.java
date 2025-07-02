@@ -31,4 +31,14 @@ public class AttractionController {
     public ResponseEntity<AttractionDto> getAttractionById(@PathVariable Long id) {
         return ResponseEntity.ok(attractionService.getAttractionById(id));
     }
+
+    @PutMapping("/update/{id}")
+    public ResponseEntity<AttractionDto> updateAttraction(@PathVariable Long id, @RequestBody AttractionDto attractionDto) {
+        return ResponseEntity.ok(attractionService.updateAttraction(id, attractionDto));
+    }
+
+    @DeleteMapping("/delete/{id}")
+    public ResponseEntity<String> deleteAttraction(@PathVariable Long id) {
+        return ResponseEntity.ok(attractionService.deleteAttraction(id));
+    }
 }
