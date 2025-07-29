@@ -8,6 +8,9 @@ import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -24,6 +27,9 @@ import java.util.Map;
 public class UserController {
     @Autowired
     private UserService userService;
+
+    @Autowired
+    private AuthenticationManager authenticationManager;
 
     @PostMapping("/register")
     public ResponseEntity<?> registerUser(@RequestBody User user) {
@@ -50,8 +56,12 @@ public class UserController {
     @PostMapping("/login/local")
     public ResponseEntity<?> loginUser(@RequestBody User user, HttpServletRequest request) {
         try {
-            User authenticateUser = userService.authenticateUser(user.getEmail(), user.getFirstname());
-            User loggedInUser = userService.loginUser(authenticateUser);
+            User loggedInUser = userService.loginUser(user);
+            Authentication authentication = authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(loggedInUser.getEmail(), loggedInUser.getPassword())
+            );
+
+            SecurityContextHolder.getContext().setAuthentication(authentication);
             HttpSession session = request.getSession(true);
             session.setAttribute("userId", loggedInUser.getId());
             session.setAttribute("userEmail", loggedInUser.getEmail());

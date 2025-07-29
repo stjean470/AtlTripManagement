@@ -24,9 +24,6 @@ public class UserService implements UserDetailsService {
     @Autowired
     private PasswordEncoder passwordEncoder;
 
-    @Autowired
-    private AuthenticationManager authenticationManager;
-
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
         User user = userRepository.findByEmail(username);
@@ -53,17 +50,7 @@ public class UserService implements UserDetailsService {
         throw new RuntimeException("User not found");
     }
 
-    public User authenticateUser(String email, String password) {
-        try {
-            Authentication authentication = authenticationManager.authenticate(
-                    new UsernamePasswordAuthenticationToken(email, password)
-            );
-            SecurityContextHolder.getContext().setAuthentication(authentication);
-            return userRepository.findByEmail(email);
-        }catch (AuthenticationException ae) {
-            throw new RuntimeException("Invalid User name or password");
-        }
-    }
+
 
 
 }
