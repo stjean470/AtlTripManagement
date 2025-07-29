@@ -2,9 +2,13 @@ package com.personal.AtlTripManagement.controller;
 
 import com.personal.AtlTripManagement.model.User;
 import com.personal.AtlTripManagement.service.UserService;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -12,6 +16,9 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
 
 @RestController
 public class UserController {
@@ -19,17 +26,61 @@ public class UserController {
     private UserService userService;
 
     @PostMapping("/register")
-    public ResponseEntity<User> registerUser(@RequestBody User user) {
-        return ResponseEntity.ok(userService.registerLocal(user));
+    public ResponseEntity<?> registerUser(@RequestBody User user) {
+        try {
+            User registeredUser = userService.registerLocal(user);
+            Map<String, Object> response = new HashMap<>();
+            response.put("message", "User registered successfully");
+            response.put("user", Map.of(
+                    "id", registeredUser.getId(),
+                    "email", registeredUser.getEmail(),
+                    "firstName", registeredUser.getFirstname(),
+                    "lastName", registeredUser.getLastname()
+            ));
+            return ResponseEntity.ok(response);
+
+        }catch (RuntimeException re) {
+            Map<String, Object> error = new HashMap<>();
+            error.put("error", re.getMessage());
+            return ResponseEntity.badRequest().body(error);
+        }
+
     }
 
     @PostMapping("/login/local")
-    public ResponseEntity<User> loginUser(@RequestBody User user) {
-        return ResponseEntity.ok(userService.loginUser(user));
+    public ResponseEntity<?> loginUser(@RequestBody User user, HttpServletRequest request) {
+        try {
+            User authenticateUser = userService.authenticateUser(user.getEmail(), user.getFirstname());
+            User loggedInUser = userService.loginUser(authenticateUser);
+            HttpSession session = request.getSession(true);
+            session.setAttribute("userId", loggedInUser.getId());
+            session.setAttribute("userEmail", loggedInUser.getEmail());
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("message", "User registered successfully");
+            response.put("user", Map.of(
+                    "id", loggedInUser.getId(),
+                    "email", loggedInUser.getEmail(),
+                    "firstName", loggedInUser.getFirstname(),
+                    "lastName", loggedInUser.getLastname()
+            ));
+            response.put("sessionId", session.getId());
+            return ResponseEntity.ok(response);
+
+        }catch (Exception e) {
+            Map<String, Object> error = new HashMap<>();
+            error.put("error", e.getMessage());
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);
+        }
     }
 
     @PostMapping("/logout")
-    public ResponseEntity<?> logout(HttpServletResponse response) throws IOException {
+    public ResponseEntity<?> logout(HttpServletRequest request, HttpServletResponse response) throws IOException {
+        HttpSession session = request.getSession(false);
+        if (session != null){
+            session.invalidate();
+        }
+        SecurityContextHolder.clearContext();
         response.sendRedirect("http://localhost:5173/login");
         return ResponseEntity.ok().build();
     }
