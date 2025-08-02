@@ -51,7 +51,11 @@ public class SecurityConfig {
         httpSecurity
                 .csrf(AbstractHttpConfigurer::disable)
                 .cors(Customizer.withDefaults())
-                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
+                .sessionManagement(session -> session
+                        .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
+                        .maximumSessions(1)
+                        .maxSessionsPreventsLogin(false)
+                )
                 .authorizeHttpRequests(request -> request
                         .requestMatchers("/login/**", "/logout", "/register").permitAll()
                         .requestMatchers("/attraction/**").authenticated()
@@ -65,7 +69,10 @@ public class SecurityConfig {
                         .logoutSuccessHandler((request, response, authentication) -> {
                             response.setStatus(HttpServletResponse.SC_OK);
                             response.setContentType("application/json");
+                            response.setHeader("Access-Control-Allow-Credentials", "true");
+                            response.setHeader("Access-Control-Allow-Origin", "http://localhost:5173");
                             response.getWriter().write("{\"message\":\"Logged out successfully\"}");
+
                         })
                         .invalidateHttpSession(true)
                         .clearAuthentication(true)

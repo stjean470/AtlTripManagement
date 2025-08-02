@@ -1,6 +1,7 @@
 package com.personal.AtlTripManagement.controller;
 
 import com.personal.AtlTripManagement.model.User;
+import com.personal.AtlTripManagement.service.UserPrincipal;
 import com.personal.AtlTripManagement.service.UserService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -54,25 +55,30 @@ public class UserController {
     }
 
     @PostMapping("/login/local")
-    public ResponseEntity<?> loginUser(@RequestBody User user, HttpServletRequest request) {
+    public ResponseEntity<?> loginUser(@RequestBody User user, HttpServletRequest request, HttpServletResponse responseBody) {
         try {
-            User loggedInUser = userService.loginUser(user);
             Authentication authentication = authenticationManager.authenticate(
-                    new UsernamePasswordAuthenticationToken(loggedInUser.getEmail(), loggedInUser.getPassword())
+                    new UsernamePasswordAuthenticationToken(user.getEmail(), user.getPassword())
             );
 
             SecurityContextHolder.getContext().setAuthentication(authentication);
+            UserPrincipal userPrincipal = (UserPrincipal) authentication.getPrincipal();
+            User authUser = userPrincipal.getUser();
             HttpSession session = request.getSession(true);
-            session.setAttribute("userId", loggedInUser.getId());
-            session.setAttribute("userEmail", loggedInUser.getEmail());
+            session.setAttribute("userId", authUser.getId());
+            session.setAttribute("userEmail", authUser.getEmail());
+
+            responseBody.setHeader("Access-Control-Allow-Credentials", "true");
+            responseBody.setHeader("Access-Control-Allow-Origin", "http://localhost:5173");
+
 
             Map<String, Object> response = new HashMap<>();
-            response.put("message", "User registered successfully");
+            response.put("message", "User logged in successfully");
             response.put("user", Map.of(
-                    "id", loggedInUser.getId(),
-                    "email", loggedInUser.getEmail(),
-                    "firstName", loggedInUser.getFirstname(),
-                    "lastName", loggedInUser.getLastname()
+                    "id", authUser.getId(),
+                    "email", authUser.getEmail(),
+                    "firstName", authUser.getFirstname(),
+                    "lastName", authUser.getLastname()
             ));
             response.put("sessionId", session.getId());
             return ResponseEntity.ok(response);
@@ -93,6 +99,19 @@ public class UserController {
         SecurityContextHolder.clearContext();
         response.sendRedirect("http://localhost:5173/login");
         return ResponseEntity.ok().build();
+    }
+
+    @GetMapping("/authorize")
+    public ResponseEntity<?> getCurrentUser(HttpServletRequest request) {
+        HttpSession session = request.getSession(false);
+        if (session != null && session.getAttribute("userId") != null) {
+            Map<String, Object> response = new HashMap<>();
+            response.put("authenticated", true);
+            response.put("userId", session.getAttribute("userId"));
+            response.put("userEmail", session.getAttribute("userEmail"));
+            return ResponseEntity.ok(response);
+        }
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("authenticated", false, "error", "No active session"));
     }
 
 
